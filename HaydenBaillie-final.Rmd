@@ -1,0 +1,111 @@
+---
+title: "Hayden Baillie Final"
+author: "Hayden Baillie"
+date: "2025-07-23"
+output: pdf_document
+---
+
+# Project Description
+## Abstract
+This project dives into whether a Pokemon's legendary status, type and generation can predict whether its total stats exceed 500, a competitive threshold. The dataset I used for this project was gathered from Kaggle and holds detailed information on Pokemon from Generation I - Generation VI. This information includes their base stats, types, and other attributes (Barradas, 2016). Cleaning the data included removing "Mega" forms are Pokemon, which are essentially more powerful forms of certain Pokemon that have the ability to "Mega Evolve, standardizing variable names and creating new variables. I then analyzed the clean dataset using visualizations and a logistic regression to look into the relationships between the predictors and the classification of a Pokemon as "high stat". From the regression analysis, I was able to conclude that Legendary Pokemon were overwhelmingly associated with the classification of "high stat", which was expected. Looking at types, fire and steel type Pokemon showed significantly higher odds of being classified as "high stat" than any other typing. Other types and what generation a Pokemon is from were not significant predictors based on my analysis.
+ 
+## Citation
+Barradas, A. (2016). Pokémon with stats [Data set]. Kaggle. Retrieved July 23, 2025, from Kaggle website: https://www.kaggle.com/datasets/abcsds/pokemon
+
+## Github Information
+- Usernmae: haydenbaillie
+- Repository Name: HaydenBaillieRFinal
+- Link: github.com/haydenbaillie/HaydenBaillieRFinal
+
+\newpage
+
+# Addressing Challenges Stated in the Midterm
+I was successfully able to meet most the goals that I had set in the midterm. I successfully cleaned and analyzed the data, making use of 2 different visualizations and a logistic regression to do so. I also was able to expaand a little bit on the idea that I had come up with for the midterm by making my research question a little bit more rigorous, since I received feedback that I could improve upon that. 
+
+As for future steps, one of the challenges I was not able to follow through on was merging datasets to include later Pokemon generations. I could not find any datasets that only had later generation Pokemon with the same, or even similar information. I would have had to manually compile a dataset to create this which I didn't deem worth it, since I feel like I can get a good idea of the analysis without it.
+
+# R Syntax Beyond the Course
+For the most part, I stuck with the libraries and syntax that we learned in the course, including the readr, dplyr, and ggplot2 libraries. These libraries were sufficient for helping me analyze, clean, and visualize the data for the most part. One library that I used that we did not specifically talk about during class to my knowledge was the broom library, which I used to help neaten up the output of my regression to make it a little bit easier to go through and interpret.
+
+\newpage
+
+# Data Import and Cleaning
+```{r setup, message=FALSE}
+library(readr)
+library(dplyr)
+library(ggplot2)
+
+pokemon = read_csv("Pokemon.csv")
+
+head(pokemon)
+
+```
+  
+```{r, message=FALSE}
+#rename columns with spaces/dots
+pokemon = pokemon %>%
+  rename(
+    Sp_Atk = 'Sp. Atk',
+    Sp_Def = 'Sp. Def',
+    Type1 = 'Type 1',
+    Type2 = 'Type 2'
+  )
+```
+
+```{r}
+#handle missing values
+pokemon = pokemon %>%
+  mutate(Type2 = ifelse(is.na(Type2), "None", Type2))
+
+#create new variable called HighStat to determine whether or not a Pokemon's total stats are >500
+pokemon = pokemon %>%
+  mutate(
+    HighStat = ifelse(Total >= 500, TRUE, FALSE)
+  )
+```
+
+```{r}
+#remove mega pokemon since they aren't part of our analysis
+pokemon = pokemon %>%
+  filter(!grepl("Mega", Name))
+
+head(pokemon)
+```
+
+# Summary Statistics
+```{r}
+
+summary(pokemon)
+
+#summary of key stats by Legendary and HighStat
+summary_table = pokemon %>%
+  group_by(Legendary, HighStat) %>%
+  summarise(
+    mean_total = mean(Total),
+    median_total = median(Total),
+    count = n()
+  )
+
+summary_table 
+```
+
+#Visualizations
+```{r}
+ggplot(pokemon, aes(x = Legendary, y = Total, fill = Legendary)) + 
+  geom_boxplot() + 
+  labs(title = "Total Stats by Legendary Status", x = "Legendary", y = "Total Stats")
+
+ggplot(pokemon, aes(x = Type1, fill = HighStat)) + 
+  geom_bar(position = "fill") + 
+  coord_flip() + 
+  labs(title = "Proportion of High Stat Pokemon by Type", x = "Type", y = "Proportion")
+```
+
+#Regression Analysis
+```{r}
+model = glm(HighStat ~ Legendary + Type1 + Generation, data = pokemon, family = binomial)
+summary(model)
+
+library(broom)
+tidy(model)
+```
